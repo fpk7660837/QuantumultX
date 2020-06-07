@@ -3,31 +3,53 @@ README：https://github.com/yichahucha/surge/tree/master
  */
 
 const $tool = new Tool()
-const $base64 = new Base64()
 const consoleLog = false
 const url = $request.url
-const body = $response.body
 const path1 = "/amdc/mobileDispatch"
 const path2 = "/gw/mtop.taobao.detail.getdetail"
 
 if (url.indexOf(path1) != -1) {
-    let obj = JSON.parse($base64.decode(body))
-    let dns = obj.dns
-    if (dns && dns.length > 0) {
-        let i = dns.length;
-        while (i--) {
-            const element = dns[i];
-            let host = "trade-acs.m.taobao.com"
-            if (element.host == host) {
-                element.ips = []
-                if (consoleLog) console.log(JSON.stringify(element))
+    if ($tool.isResponse) {
+        const $base64 = new Base64()
+        let body = $response.body
+        let obj = JSON.parse($base64.decode(body))
+        let dns = obj.dns
+        if (dns && dns.length > 0) {
+            let i = dns.length;
+            while (i--) {
+                const element = dns[i];
+                let host = "trade-acs.m.taobao.com"
+                if (element.host == host) {
+                    element.ips = []
+                    if (consoleLog) console.log(JSON.stringify(element))
+                }
             }
         }
+        body = $base64.encode(JSON.stringify(obj))
+        $done({ body })
+    } else {
+        let headers = $request.headers
+        let body = $request.body
+        if (headers["User-Agent"].indexOf("%E6%89%8B%E6%9C%BA%E6%B7%98%E5%AE%9D") != -1) {
+            let json = Qs2Json(body)
+            let domain = json.domain.split(" ")
+            let i = domain.length;
+            while (i--) {
+                const block = "trade-acs.m.taobao.com"
+                const element = domain[i];
+                if (element == block) {
+                    domain.splice(i, 1);
+                }
+            }
+            json.domain = domain.join(" ")
+            body = Json2Qs(json)
+        }
+        $done({ body })
     }
-    $done({ body: $base64.encode(JSON.stringify(obj)) })
 }
 
 if (url.indexOf(path2) != -1) {
+    const body = $response.body
     $done({ body })
     const obj = JSON.parse(body)
     let item = obj.data.item
@@ -60,11 +82,11 @@ function priceSummary(data) {
     listPriceDetail.pop()
     let list = listPriceDetail.concat(historySummary(data.single))
     list.forEach((item, index) => {
-        if (index == 2) {
+        if (item.Name == "双11价格") {
             item.Name = "双十一价格"
-        } else if (index == 3) {
+        } else if (item.Name == "618价格") {
             item.Name = "六一八价格"
-        } else if (index == 4) {
+        } else if (item.Name == "30天最低价") {
             item.Name = "三十天最低"
         }
         summary += `\n${item.Name}   ${item.Price}   ${item.Date}   ${item.Difference}`
@@ -114,7 +136,7 @@ function historySummary(single) {
 }
 
 function difference(currentPrice, price) {
-    let difference = strip(currentPrice - price)
+    let difference = sub(currentPrice, price)
     if (difference == 0) {
         return "-"
     } else {
@@ -122,8 +144,18 @@ function difference(currentPrice, price) {
     }
 }
 
-function strip(num, precision = 12) {
-    return +parseFloat(num.toPrecision(precision));
+function sub(arg1, arg2) {
+    return add(arg1, -Number(arg2), arguments[2]);
+}
+
+function add(arg1, arg2) {
+    arg1 = arg1.toString(), arg2 = arg2.toString();
+    var arg1Arr = arg1.split("."), arg2Arr = arg2.split("."), d1 = arg1Arr.length == 2 ? arg1Arr[1] : "", d2 = arg2Arr.length == 2 ? arg2Arr[1] : "";
+    var maxLen = Math.max(d1.length, d2.length);
+    var m = Math.pow(10, maxLen);
+    var result = Number(((arg1 * m + arg2 * m) / m).toFixed(maxLen));
+    var d = arguments[2];
+    return typeof d === "number" ? Number((result).toFixed(d)) : result;
 }
 
 function requestPrice(share_url, callback) {
@@ -151,6 +183,28 @@ function dateFormat(cellval) {
     const month = date.getMonth() + 1 < 10 ? "0" + (date.getMonth() + 1) : date.getMonth() + 1;
     const currentDate = date.getDate() < 10 ? "0" + date.getDate() : date.getDate();
     return date.getFullYear() + "-" + month + "-" + currentDate;
+}
+
+function Qs2Json(url) {
+    var search = url.substring(url.lastIndexOf("?") + 1);
+    var obj = {};
+    var reg = /([^?&=]+)=([^?&=]*)/g;
+    search.replace(reg, function (rs, $1, $2) {
+        var name = decodeURIComponent($1);
+        var val = decodeURIComponent($2);
+        val = String(val);
+        obj[name] = val;
+        return rs;
+    });
+    return obj;
+}
+
+function Json2Qs(json) {
+    var temp = [];
+    for (var k in json) {
+        temp.push(k + "=" + json[k]);
+    }
+    return temp.join("&");
 }
 
 Array.prototype.insert = function (index, item) {

@@ -4,8 +4,8 @@ README：https://github.com/yichahucha/surge/tree/master
 
 const $tool = new Tool()
 const consoleLog = false;
-const imdbApikeyCacheKey = "IMDbApikey";
-const netflixTitleCacheKey = "NetflixTitle";
+const imdbApikeyCacheKey = "ImdbApikeyCacheKey";
+const netflixTitleCacheKey = "NetflixTitleCacheKey";
 
 if (!$tool.isResponse) {
     let url = $request.url;
@@ -17,7 +17,9 @@ if (!$tool.isResponse) {
     const isEnglish = url.match(/languages=en/) ? true : false;
     if (!title && !isEnglish) {
         const currentSummary = urlDecode.match(/\["videos","(\d+)","current","summary"\]/);
-        url = url.replace("&path=" + encodeURIComponent(currentSummary[0]), "");
+        if (currentSummary) {
+            url = url.replace("&path=" + encodeURIComponent(currentSummary[0]), "");
+        }
         url = url.replace(/&languages=(.*?)&/, "&languages=en-US&");
     }
     url += "&path=" + encodeURIComponent(`[${videos[0]},"details"]`);
@@ -38,10 +40,11 @@ if (!$tool.isResponse) {
     }
     let year = null;
     let type = video.summary.type;
+    if (type == "show") {
+        type = "series";
+    }
     if (type == "movie") {
         year = video.details.releaseYear;
-    } else if (type == "show") {
-        type = "series";
     }
     delete video.details;
     const requestRatings = async () => {
@@ -151,7 +154,7 @@ function get_IMDb_message(data) {
         if (imdb_source == "Internet Movie Database") {
             const imdb_votes = data.imdbVotes;
             const imdb_rating = ratings[0]["Value"];
-            rating_message = "IMDb:  ⭐️ " + imdb_rating + "    " + "" + imdb_votes;
+            rating_message = "IMDb:  ⭐️ " + imdb_rating + "   " + imdb_votes;
             if (data.Type == "movie") {
                 if (ratings.length > 1) {
                     const source = ratings[1]["Source"];
@@ -190,7 +193,6 @@ function errorTip() {
 
 function IMDbApikeys() {
     const apikeys = [
-        "PlzBanMe", "4e89234e",
         "f75e0253", "d8bb2d6b",
         "ae64ce8d", "7218d678",
         "b2650e38", "8c4a29ab",
@@ -200,7 +202,8 @@ function IMDbApikeys() {
         "9cc1a9b7", "e53c2c11",
         "f6dfce0e", "b9db622f",
         "e6bde2b9", "d324dbab",
-        "d7904fa3", "aeaf88b9"];
+        "d7904fa3", "aeaf88b9",
+        "4e89234e",];
     return apikeys;
 }
 
