@@ -1,4 +1,5 @@
 /*
+更新时间: 2020-06-08 20:45
 
 赞赏:中青邀请码`46308484`,农妇山泉 -> 有点咸，万分感谢
 
@@ -65,7 +66,7 @@ hostname = *.youth.cn, ios.baertt.com
 ~~~~~~~~~~~~~~~~
 
 */
-const notifyInterval = `10`  //通知间隔，默认抽奖每10次通知一次
+const notifyInterval = `20`  //通知间隔，默认抽奖每10次通知一次
 const logs = 0;   //0为关闭日志，1为开启
 const CookieName = "中青看点"
 const signheaderKey = 'youthheader_zq'
@@ -133,7 +134,7 @@ async function all()
 }
 
 function sign() {      
-  return new Promise((resolve, reject) =>
+ return new Promise((resolve, reject) =>
    {
     const signurl = { 
       url: 'https://kd.youth.cn/TaskCenter/sign', 
@@ -150,8 +151,14 @@ function sign() {
           signresult = `【签到信息】重复`
           detail= ``
          }
+        else if(signres.status == 2){
+         signresult = `签到失败，Cookie已失效‼️`
+         detail= ``
+         sy.msg(CookieName,signresult,detail)
+         return
+         }
+       resolve()
        })
-    resolve()
      })
   }
       
@@ -180,9 +187,9 @@ function signInfo() {
   }
 
 function Invitant() {      
-  return new Promise((resolve, reject) => {
-    const url = { 
-      url: `https://kd.youth.cn/WebApi/User/fillCode`, 
+ return new Promise((resolve, reject) => {
+   const url = { 
+     url: `https://kd.youth.cn/WebApi/User/fillCode`, 
      headers: JSON.parse(signheaderVal),
      body: `{"code": "46308484"}`,
 }
@@ -214,7 +221,7 @@ resolve()
 // 点我激励视频奖励
 function gameVideo() {      
  return new Promise((resolve, reject) => {
-    const url = { 
+   const url = { 
       url: `https://ios.baertt.com/v5/Game/GameVideoReward.json`, 
       body: articlebodyVal,
 }
@@ -597,7 +604,7 @@ function earningsInfo() {
 }
 
 function showmsg() {  
-    if (rotaryres.status==1&&rotaryres.data.remainTurn>=95){
+    if (rotaryres.status==1&&rotaryres.data.remainTurn>=97){
      sy.msg(CookieName+" "+nick,subTitle,detail)
      }
     else if (rotaryres.status==1&&rotaryres.data.remainTurn%notifyInterval==0)    {
